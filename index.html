@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StreamingFeeds | Premium TV Hub</title>
     <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -43,26 +44,6 @@
         .player-idle {
             cursor: none !important;
         }
-
-        /* Оптимизация за завъртян мобилен екран (Landscape Mode) */
-        @media (max-height: 500px) and (orientation: landscape) {
-            header, .mobile-tabs-nav, aside {
-                display: none !important;
-            }
-            .app-main-layout {
-                height: 100vh !important;
-                padding: 0 !important;
-            }
-            .player-card-wrapper {
-                max-width: 100% !important;
-                height: 100vh !important;
-                border-radius: 0 !important;
-                border: none !important;
-            }
-            .player-container {
-                height: 100vh !important;
-            }
-        }
     </style>
     
     <script>
@@ -73,7 +54,7 @@
         }
     </script>
 </head>
-<body class="bg-[#f8fafc] text-slate-900 dark:bg-[#09090b] dark:text-zinc-100 h-screen antialiased flex flex-col transition-colors duration-300 overflow-hidden">
+<body class="bg-[#f8fafc] text-slate-900 dark:bg-[#09090b] dark:text-zinc-100 min-h-screen antialiased flex flex-col transition-colors duration-300 overflow-x-hidden">
 
    <header class="h-[70px] min-h-[70px] bg-white dark:bg-zinc-900 border-b border-slate-200/80 dark:border-zinc-800/80 shadow-xs px-4 md:px-6 flex items-center justify-between z-50 transition-colors duration-300">
         <div class="flex items-center gap-3 md:gap-6">
@@ -120,9 +101,9 @@
         </div>
     </header>
 
-    <div class="flex flex-col lg:flex-row flex-1 w-full h-[calc(100vh-70px)] overflow-hidden">
+    <div class="flex flex-col lg:flex-row flex-1 w-full min-h-[calc(100vh-70px)]">
         
-        <main class="app-main-layout order-1 lg:order-2 w-full lg:flex-1 bg-[#f8fafc] dark:bg-[#09090b] p-2 sm:p-4 lg:p-6 flex flex-col justify-center items-center transition-colors duration-300">
+        <main class="app-main-layout order-1 lg:order-2 w-full lg:flex-1 bg-[#f8fafc] dark:bg-[#09090b] p-2 sm:p-4 lg:p-6 flex flex-col justify-start lg:justify-center items-center transition-colors duration-300">
             <div class="player-card-wrapper w-full max-w-[1200px] bg-black p-0 rounded-2xl border border-slate-200/70 dark:border-zinc-800/80 shadow-2xl transition-colors duration-300 overflow-hidden">
                 
                 <div id="player-wrapper" class="player-container aspect-video w-full bg-black relative group select-none overflow-hidden player-idle">
@@ -197,11 +178,11 @@
             </button>
         </div>
         
-        <aside id="sidebar-channels" class="w-full lg:w-[300px] lg:min-w-[300px] bg-white dark:bg-zinc-900 lg:border-r border-slate-200/80 dark:border-zinc-800/80 flex flex-col p-5 flex-1 lg:flex-initial overflow-y-auto transition-colors duration-300 order-3 lg:order-1">
+        <aside id="sidebar-channels" class="w-full lg:w-[300px] lg:min-w-[300px] bg-white dark:bg-zinc-900 lg:border-r border-slate-200/80 dark:border-zinc-800/80 flex flex-col p-5 flex-1 lg:flex-initial transition-colors duration-300 order-3 lg:order-1">
             <div id="categoriesContainer" class="space-y-6"></div>
         </aside>
 
-        <aside id="sidebar-program" class="w-full lg:w-[340px] lg:min-w-[340px] bg-white dark:bg-zinc-900 lg:border-l border-slate-200/80 dark:border-zinc-800/80 hidden lg:flex flex-col flex-1 lg:flex-initial transition-colors duration-300 overflow-hidden order-4 lg:order-3">
+        <aside id="sidebar-program" class="w-full lg:w-[340px] lg:min-w-[340px] bg-white dark:bg-zinc-900 lg:border-l border-slate-200/80 dark:border-zinc-800/80 hidden lg:flex flex-col flex-1 lg:flex-initial transition-colors duration-300 order-4 lg:order-3">
             <div class="p-5 border-b border-slate-200/80 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 space-y-1.5">
                 <div class="flex items-center justify-between">
                     <h4 class="text-[10px] font-bold tracking-widest text-slate-400 dark:text-zinc-500 uppercase">Телевизионна програма</h4>
@@ -210,7 +191,7 @@
                 <h3 id="currentChannelName" class="text-base font-black text-slate-950 dark:text-white tracking-tight">Зареждане...</h3>
             </div>
             
-            <div id="programContainer" class="flex-1 overflow-y-auto p-5 space-y-3.5"></div>
+            <div id="programContainer" class="flex-1 p-5 space-y-3.5"></div>
         </aside>
     </div>
 
@@ -403,8 +384,8 @@
                 const playPromise = video.play();
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
-                        console.log("Autoplay със звук бе блокиран от браузъра. Пускане без звук...");
-                        video.muted = false;
+                        console.log("Autoplay бе блокиран от браузъра. Опит без звук...");
+                        video.muted = true;
                         video.play();
                     });
                 }
@@ -555,7 +536,6 @@
             }, 3500);
         }
 
-        // Логика за 1-во цъкане (показва бутоните) и 2-ро цъкане (спира/пуска видеото)
         video.addEventListener('click', (e) => {
             if (wrapper.classList.contains('player-idle')) {
                 showControlsTemporarily();
@@ -602,6 +582,7 @@
         wrapper.addEventListener('mousemove', showControlsTemporarily);
         wrapper.addEventListener('touchstart', showControlsTemporarily, { passive: true });
 
+        // Запазваме непрекъснатостта при излизане/влизане във Fullscreen
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
@@ -612,6 +593,11 @@
             } else {
                 clearTimeout(idleTimer);
                 wrapper.classList.remove('player-idle');
+                
+                // Гарантираме, че видеото продължава да върви плавно
+                if (video.paused && video.readyState >= 2) {
+                    video.play().catch(() => {});
+                }
             }
         }
     }
@@ -691,9 +677,9 @@
         if (!isFullscreen) {
             if (wrapper.requestFullscreen) {
                 wrapper.requestFullscreen();
-            } else if (wrapper.webkitRequestFullscreen) { // Поддръжка за iOS / Safari
+            } else if (wrapper.webkitRequestFullscreen) {
                 wrapper.webkitRequestFullscreen();
-            } else if (video.webkitEnterFullscreen) { // iOS Native Video Fullscreen
+            } else if (video.webkitEnterFullscreen) {
                 video.webkitEnterFullscreen();
             }
         } else {
