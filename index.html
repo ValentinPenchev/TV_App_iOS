@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StreamingFeeds | Premium TV Hub</title>
     <link rel="icon" type="image/png" href="logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -32,12 +32,36 @@
             background: #ffffff;
         }
 
+        /* Автоматично укриване на контролите при бездействие */
+        .player-controls-layer {
+            transition: opacity 0.3s ease;
+        }
         .player-idle .player-controls-layer {
             opacity: 0 !important;
             pointer-events: none !important;
         }
         .player-idle {
             cursor: none !important;
+        }
+
+        /* Оптимизация за завъртян мобилен екран (Landscape Mode) */
+        @media (max-height: 500px) and (orientation: landscape) {
+            header, .mobile-tabs-nav, aside {
+                display: none !important;
+            }
+            .app-main-layout {
+                height: 100vh !important;
+                padding: 0 !important;
+            }
+            .player-card-wrapper {
+                max-width: 100% !important;
+                height: 100vh !important;
+                border-radius: 0 !important;
+                border: none !important;
+            }
+            .player-container {
+                height: 100vh !important;
+            }
         }
     </style>
     
@@ -98,31 +122,26 @@
 
     <div class="flex flex-col lg:flex-row flex-1 w-full h-[calc(100vh-70px)] overflow-hidden">
         
-        <main class="order-1 lg:order-2 w-full lg:flex-1 bg-[#f8fafc] dark:bg-[#09090b] p-2 sm:p-4 lg:p-6 flex flex-col justify-center items-center transition-colors duration-300">
-            <div class="w-full max-w-[1200px] bg-black p-0 rounded-2xl border border-slate-200/70 dark:border-zinc-800/80 shadow-2xl transition-colors duration-300 overflow-hidden">
+        <main class="app-main-layout order-1 lg:order-2 w-full lg:flex-1 bg-[#f8fafc] dark:bg-[#09090b] p-2 sm:p-4 lg:p-6 flex flex-col justify-center items-center transition-colors duration-300">
+            <div class="player-card-wrapper w-full max-w-[1200px] bg-black p-0 rounded-2xl border border-slate-200/70 dark:border-zinc-800/80 shadow-2xl transition-colors duration-300 overflow-hidden">
                 
-                <div id="player-wrapper" class="player-container aspect-video w-full bg-black relative group select-none overflow-hidden">
+                <div id="player-wrapper" class="player-container aspect-video w-full bg-black relative group select-none overflow-hidden player-idle">
                     
                     <video id="video" class="w-full h-full object-contain cursor-pointer" autoplay playsinline></video>
 
-                    <div class="player-controls-layer transition-opacity duration-300">
+                    <div class="player-controls-layer pointer-events-auto">
                         
-                        <!-- Градиент за по-добра видимост на бутоните -->
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none"></div>
 
-                        <!-- Долна лента за управление -->
-                        <div class="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col gap-2">
+                        <div class="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-20 flex flex-col gap-2">
                             
-                            <!-- Прогрес бар -->
                             <div id="progressBarContainer" class="w-full h-1.5 progress-bar-bg rounded-full cursor-pointer relative group/bar hover:h-2.5 transition-all">
                                 <div id="progressBarFill" class="h-full progress-bar-fill rounded-full w-[0%] relative">
                                     <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-md scale-0 group-hover/bar:scale-100 transition-transform"></div>
                                 </div>
                             </div>
 
-                            <!-- Бутони и контроли -->
                             <div class="flex items-center justify-between text-white pt-1">
-                                <!-- Лява част: Play, Rewind, Forward, Volume & Time -->
                                 <div class="flex items-center gap-2 sm:gap-4">
                                     <button onclick="seekRelative(-10)" class="text-white/80 hover:text-white p-1 transition transform active:scale-90 flex items-center justify-center relative">
                                         <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
@@ -139,7 +158,6 @@
                                         <span class="text-[7px] sm:text-[8px] font-bold absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pt-0.5">10</span>
                                     </button>
 
-                                    <!-- Звук -->
                                     <div class="flex items-center gap-1.5 group/vol">
                                         <button onclick="toggleMute()" class="text-white/80 hover:text-white p-1">
                                             <svg id="volumeIcon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
@@ -147,13 +165,11 @@
                                         <input id="volumeSlider" type="range" min="0" max="1" step="0.05" value="1" class="w-12 sm:w-16 h-1 bg-white/30 accent-white rounded-lg cursor-pointer hidden sm:block">
                                     </div>
 
-                                    <!-- Времетраене -->
                                     <span class="text-[11px] sm:text-xs font-semibold text-white/90 tracking-wide font-mono hidden sm:inline">
                                         <span id="currentTimeDisplay">00:00:00</span> / <span id="durationDisplay">00:00:00</span>
                                     </span>
                                 </div>
 
-                                <!-- Дясна част: PiP & Fullscreen -->
                                 <div class="flex items-center gap-2 sm:gap-3.5">
                                     <button onclick="togglePiP()" class="text-white/80 hover:text-white p-1 transition" title="Picture in Picture">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"></rect><rect x="11" y="9" width="7" height="5" rx="1"></rect></svg>
@@ -172,7 +188,7 @@
             </div>
         </main>
 
-        <div class="flex lg:hidden bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 w-full order-2 sticky top-0 z-40">
+        <div class="mobile-tabs-nav flex lg:hidden bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 w-full order-2 sticky top-0 z-40">
             <button id="mobile-tab-channels" onclick="switchMobileTab('channels')" class="flex-1 py-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 border-red-500 text-red-500">
                 Канали
             </button>
@@ -528,7 +544,26 @@
         const progressBarContainer = document.getElementById('progressBarContainer');
         const wrapper = document.getElementById('player-wrapper');
 
-        video.addEventListener('click', togglePlayPause);
+        let idleTimer = null;
+
+        function showControlsTemporarily() {
+            wrapper.classList.remove('player-idle');
+            clearTimeout(idleTimer);
+
+            idleTimer = setTimeout(() => {
+                wrapper.classList.add('player-idle');
+            }, 3500);
+        }
+
+        // Логика за 1-во цъкане (показва бутоните) и 2-ро цъкане (спира/пуска видеото)
+        video.addEventListener('click', (e) => {
+            if (wrapper.classList.contains('player-idle')) {
+                showControlsTemporarily();
+            } else {
+                togglePlayPause();
+                showControlsTemporarily();
+            }
+        });
 
         video.addEventListener('play', () => {
             playIcon.classList.add('hidden');
@@ -564,31 +599,21 @@
             }
         });
 
-        let idleTimer = null;
-        
-        function resetIdleTimer() {
-            wrapper.classList.remove('player-idle');
-            clearTimeout(idleTimer);
+        wrapper.addEventListener('mousemove', showControlsTemporarily);
+        wrapper.addEventListener('touchstart', showControlsTemporarily, { passive: true });
 
-            if (document.fullscreenElement) {
-                idleTimer = setTimeout(() => {
-                    wrapper.classList.add('player-idle');
-                }, 2500);
-            }
-        }
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
-        wrapper.addEventListener('mousemove', resetIdleTimer);
-        wrapper.addEventListener('mousedown', resetIdleTimer);
-        wrapper.addEventListener('touchstart', resetIdleTimer);
-
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) {
+        function handleFullscreenChange() {
+            const isFS = document.fullscreenElement || document.webkitFullscreenElement;
+            if (isFS) {
+                showControlsTemporarily();
+            } else {
                 clearTimeout(idleTimer);
                 wrapper.classList.remove('player-idle');
-            } else {
-                resetIdleTimer();
             }
-        });
+        }
     }
 
     function initKeyboardShortcuts() {
@@ -659,10 +684,24 @@
 
     function toggleFullscreen() {
         const wrapper = document.getElementById('player-wrapper');
-        if (!document.fullscreenElement) {
-            wrapper.requestFullscreen().catch(err => console.error(err));
+        const video = document.getElementById('video');
+
+        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+
+        if (!isFullscreen) {
+            if (wrapper.requestFullscreen) {
+                wrapper.requestFullscreen();
+            } else if (wrapper.webkitRequestFullscreen) { // Поддръжка за iOS / Safari
+                wrapper.webkitRequestFullscreen();
+            } else if (video.webkitEnterFullscreen) { // iOS Native Video Fullscreen
+                video.webkitEnterFullscreen();
+            }
         } else {
-            document.exitFullscreen();
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
         }
     }
 
