@@ -1,10 +1,11 @@
 const express = require('express');
 const puppeteer = require('puppeteer');
 const cors = require('cors');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 // ГЛОБАЛНА ЗАЩИТА СРЕЩУ СРИВОВЕ
 process.on('unhandledRejection', (reason) => {
-    // Игнорираме остатъчни съобщения от затворени табове по време на мрежови заявки
     if (reason && reason.message && reason.message.includes('Target closed')) return;
     console.error('⚠️ Засечена и изолирана асинхронна грешка:', reason);
 });
@@ -17,7 +18,7 @@ app.use(cors());
 
 // КЕШ ЗА СТРИЙМОВЕТЕ
 let streamCache = {
-    diema1: '', diema2: '', diema3: '',maxOne: '',
+    diema1: '', diema2: '', diema3: '', maxOne: '',
     max1: '', max2: '', euro1: '', euro2: '',
     bnt1: '', bnt3: '', btv_comedy: '', star_channel: '', star_life: '', lastUpdated: null
 };
@@ -56,19 +57,18 @@ async function scrapeTokens() {
     try {
         browser = await puppeteer.launch({ 
             headless: "new",
-    args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox', 
-        '--disable-dev-shm-usage',
-        '--single-process',
-        '--no-zygote',
-        '--disable-gpu',
-        '--disable-audio-output',
-        '--blink-settings=imagesEnabled=false'
-    ]
+            args: [
+                '--no-sandbox', 
+                '--disable-setuid-sandbox', 
+                '--disable-dev-shm-usage',
+                '--single-process',
+                '--no-zygote',
+                '--disable-gpu',
+                '--disable-audio-output',
+                '--blink-settings=imagesEnabled=false'
+            ]
         });
 
-        // ФИКС: Затваряме САМО табове, които са отворени от друг таб (т.е. истински попъп реклами)
         browser.on('targetcreated', async (target) => {
             try {
                 if (target.type() === 'page' && target.opener()) {
@@ -90,7 +90,10 @@ async function scrapeTokens() {
             }
 
             if (foundStream) {
-                streamCache[channel.id] = foundStream;
+                // Преобразуване към HTTPS, за да не се блокира от iOS Safari (Mixed Content)
+                streamCache[channel.id] = foundStream.startsWith('http://') 
+                    ? foundStream.replace('http://', 'https://') 
+                    : foundStream;
             } else {
                 console.log(`   ❌ Не бе намерен поток за ${channel.name}`);
             }
@@ -115,7 +118,6 @@ async function scanSingleChannel(browser, channel, url) {
         page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
 
-        // Защита от пренасочвания и диалогови прозорци
         await page.evaluateOnNewDocument(() => {
             window.open = () => null;
             window.alert = () => null;
@@ -123,7 +125,6 @@ async function scanSingleChannel(browser, channel, url) {
             Object.defineProperty(window, 'onbeforeunload', { writable: false, value: () => null });
         });
 
-        // Блокиране на реклами на мрежово ниво
         await page.setRequestInterception(true);
         
         page.on('request', async (request) => {
@@ -152,15 +153,11 @@ async function scanSingleChannel(browser, channel, url) {
                 } else {
                     await request.continue().catch(() => {});
                 }
-            } catch (err) {
-                // Предотвратява краш, ако табът се затвори по средата на заявката
-            }
+            } catch (err) {}
         });
 
-        // Зареждаме само докато се построи DOM дървото
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
 
-        // Изчистване на невидими рекламни слоеве над плеъра
         await page.evaluate(() => {
             const playerEl = document.getElementById('player');
             if (!playerEl) return;
@@ -177,7 +174,6 @@ async function scanSingleChannel(browser, channel, url) {
             });
         }).catch(() => {});
 
-        // Ако не е уловен автоматично при зареждане, правим сигурен клик върху контейнера
         if (!foundStream) {
             await page.mouse.click(640, 360).catch(() => {});
             
@@ -190,7 +186,6 @@ async function scanSingleChannel(browser, channel, url) {
             }).catch(() => {});
         }
 
-        // Динамично изчакване (макс 4 секунди, но спира веднага щом линкът е намерен)
         for (let i = 0; i < 20; i++) {
             if (foundStream) break;
             await new Promise(resolve => setTimeout(resolve, 200));
@@ -220,7 +215,6 @@ app.get('/api/streams', (req, res) => {
     res.json(streamCache); 
 });
 
-// ФИКС: Карта с ИСТИНСКИТЕ и работещи линкове към каналите в tv-programa.bg
 const channelUrlMap = {
     diema1: 'https://tv-programa.bg/diema-sport',
     diema2: 'https://tv-programa.bg/diema-sport-2',
@@ -237,9 +231,9 @@ const channelUrlMap = {
     star_life: 'https://tv-programa.bg/star-life'
 };
 
-// Кеш памет за програмата
 let tvProgramCache = {};
 
+// БЪРЗ ЕНДПОИНТ ЗА ТВ ПРОГРАМА (Без Puppeteer / С нисък разход на RAM)
 app.get('/api/program', async (req, res) => {
     const { channel } = req.query;
 
@@ -249,87 +243,52 @@ app.get('/api/program', async (req, res) => {
 
     const now = Date.now();
 
-    // Ако имаме кеширана програма от последните 60 минути, я връщаме веднага
     if (tvProgramCache[channel] && (now - tvProgramCache[channel].timestamp < 60 * 60 * 1000)) {
         return res.json(tvProgramCache[channel].data);
     }
 
-    let browser;
     try {
-        browser = await puppeteer.launch({
-            headless: true,
-            args: [
-                '--no-sandbox', 
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--blink-settings=imagesEnabled=false'
-            ]
-        });
-        const page = await browser.newPage();
-        
-        // КРИТИЧЕН ФИКС: Задаваме реален User-Agent, за да прескочим защитата на сайта
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
-
-        // Спираме тежките ресурси
-        await page.setRequestInterception(true);
-        page.on('request', async (req) => {
-            try {
-                if (['image', 'font', 'media'].includes(req.resourceType())) {
-                    await req.abort();
-                } else {
-                    await req.continue();
-                }
-            } catch (e) {}
-        });
-
         const targetUrl = channelUrlMap[channel];
-        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-
-        // Извличане на часовете и заглавията
-        const liveEvents = await page.evaluate(() => {
-            const results = [];
-            // По-агресивен селектор, за да хване структурата, дори ако има лека промяна
-            const rows = document.querySelectorAll('.prog_row, tr, li, div');
-            
-            rows.forEach(row => {
-                const text = row.innerText ? row.innerText.trim() : '';
-                const timeMatch = text.match(/^(\d{2}[:\.]\d{2})/);
-                
-                if (timeMatch) {
-                    const time = timeMatch[1].replace('.', ':');
-                    let title = text.substring(timeMatch[1].length).replace(/^[-–\s:\.]+/g, '').trim();
-                    title = title.split('\n')[0].trim();
-
-                    // Игнорираме твърде къси заглавия и дублирани часове
-                    if (title.length > 2 && !results.some(e => e.time === time)) {
-                        results.push({ time, title });
-                    }
-                }
-            });
-            return results;
+        const { data } = await axios.get(targetUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+            },
+            timeout: 5000
         });
 
-        if (liveEvents.length > 0) {
-            // Подреждаме ги хронологично за всеки случай
-            liveEvents.sort((a, b) => a.time.localeCompare(b.time));
+        const $ = cheerio.load(data);
+        const results = [];
 
-            tvProgramCache[channel] = {
-                timestamp: now,
-                data: liveEvents
-            };
-            res.json(liveEvents);
-        } else {
-            res.json([]);
-        }
+        $('.prog_row, tr, li, div').each((i, el) => {
+            const text = $(el).text().trim();
+            const timeMatch = text.match(/^(\d{2}[:\.]\d{2})/);
+            
+            if (timeMatch) {
+                const time = timeMatch[1].replace('.', ':');
+                let title = text.substring(timeMatch[1].length).replace(/^[-–\s:\.]+/g, '').trim();
+                title = title.split('\n')[0].trim();
 
+                if (title.length > 2 && !results.some(e => e.time === time)) {
+                    results.push({ time, title });
+                }
+            }
+        });
+
+        results.sort((a, b) => a.time.localeCompare(b.time));
+
+        tvProgramCache[channel] = {
+            timestamp: now,
+            data: results
+        };
+        
+        res.json(results);
     } catch (err) {
-        console.error(`❌ Грешка при извличане на жива програма за ${channel}:`, err.message);
-        res.status(500).json({ error: 'Неуспешно извличане на данни в реално време.' });
-    } finally {
-        if (browser) await browser.close().catch(() => {});
+        console.error(`❌ Грешка при извличане на програма за ${channel}:`, err.message);
+        res.json([]);
     }
 });
 
-app.listen(3000, () => { 
-    console.log('🛡️ Стрийминг сървърът работи стабилно на http://localhost:3000'); 
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => { 
+    console.log(`🛡️ Стрийминг сървърът работи стабилно на порт ${PORT}`); 
 });
