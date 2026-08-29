@@ -102,12 +102,729 @@
         </div>
     </header>
 
-    <div class="flex flex-col lg:flex-row flex-1 w-full min-h-[calc(100vh-70px)]">
+    <div class="flex flex-col lg:flex-row flex-1 w-full items-start">
         
-        <main class="app-main-layout order-1 lg:order-2 w-full lg:flex-1 bg-[#f8fafc] dark:bg-[#09090b] p-2 sm:p-4 lg:p-6 flex flex-col justify-start lg:justify-center items-center transition-colors duration-300">
+        <main class="app-main-layout order-1 lg:order-2 w-full lg:flex-1 bg-[#f8fafc] dark:bg-[#09090b] p-2 sm:p-4 lg:p-6 flex flex-col justify-start items-center transition-colors duration-300">
             <div class="player-card-wrapper w-full max-w-[1200px] bg-black p-0 rounded-2xl border border-slate-200/70 dark:border-zinc-800/80 shadow-2xl transition-colors duration-300 overflow-hidden">
                 
-                <div id="player-wrapper" class="player-container aspect-video w-full bg-black relative group select-none overflow-hidden player-idle">
+                <div id="player-wrapper" class="player-container aspect-video w-full max-h-[calc(100vh-120px)] bg-black relative group select-none overflow-hidden player-idle flex items-center justify-center">
+                    
+                    <video id="video" class="w-full h-full object-contain cursor-pointer" autoplay playsinline></video>
+
+                    <div class="player-controls-layer pointer-events-auto">
+                        
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none"></div>
+
+                        <div class="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-20 flex flex-col gap-2">
+                            
+                            <div id="progressBarContainer" class="w-full h-1.5 progress-bar-bg rounded-full cursor-pointer relative group/bar hover:h-2.5 transition-all">
+                                <div id="progressBarFill" class="h-full progress-bar-fill rounded-full w-[0%] relative">
+                                    <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-md scale-0 group-hover/bar:scale-100 transition-transform"></div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between text-white pt-1">
+                                <div class="flex items-center gap-2 sm:gap-4">
+                                    <button onclick="seekRelative(-10)" class="text-white/80 hover:text-white p-1 transition transform active:scale-90 flex items-center justify-center relative">
+                                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                                        <span class="text-[7px] sm:text-[8px] font-bold absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pt-0.5">10</span>
+                                    </button>
+
+                                    <button id="playPauseBtn" onclick="togglePlayPause()" class="text-white hover:scale-110 p-1 transition transform active:scale-90">
+                                        <svg id="playIcon" class="w-6 h-6 sm:w-7 sm:h-7 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                        <svg id="pauseIcon" class="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                                    </button>
+
+                                    <button onclick="seekRelative(10)" class="text-white/80 hover:text-white p-1 transition transform active:scale-90 flex items-center justify-center relative">
+                                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg>
+                                        <span class="text-[7px] sm:text-[8px] font-bold absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pt-0.5">10</span>
+                                    </button>
+
+                                    <div class="flex items-center gap-1.5 group/vol">
+                                        <button onclick="toggleMute()" class="text-white/80 hover:text-white p-1">
+                                            <svg id="volumeIcon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                        </button>
+                                        <input id="volumeSlider" type="range" min="0" max="1" step="0.05" value="1" class="w-12 sm:w-16 h-1 bg-white/30 accent-white rounded-lg cursor-pointer hidden sm:block">
+                                    </div>
+
+                                    <span class="text-[11px] sm:text-xs font-semibold text-white/90 tracking-wide font-mono hidden sm:inline">
+                                        <span id="currentTimeDisplay">00:00:00</span> / <span id="durationDisplay">00:00:00</span>
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center gap-2 sm:gap-3.5">
+                                    <button onclick="togglePiP()" class="text-white/80 hover:text-white p-1 transition" title="Picture in Picture">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"></rect><rect x="11" y="9" width="7" height="5" rx="1"></rect></svg>
+                                    </button>
+
+                                    <button onclick="toggleFullscreen()" class="text-white hover:text-white p-1 transition active:scale-95" title="Цял екран">
+                                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </main>
+
+        <div class="mobile-tabs-nav flex lg:hidden bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 w-full order-2 sticky top-0 z-40">
+            <button id="mobile-tab-channels" onclick="switchMobileTab('channels')" class="flex-1 py-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 border-red-500 text-red-500">
+                Канали
+            </button>
+            <button id="mobile-tab-program" onclick="switchMobileTab('program')" class="flex-1 py-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-500 dark:text-zinc-400">
+                Програма
+            </button>
+        </div>
+        
+        <aside id="sidebar-channels" class="w-full lg:w-[300px] lg:min-w-[300px] bg-white dark:bg-zinc-900 lg:border-r border-slate-200/80 dark:border-zinc-800/80 flex flex-col p-5 flex-1 lg:flex-initial transition-colors duration-300 order-3 lg:order-1">
+            <div id="categoriesContainer" class="space-y-6"></div>
+        </aside>
+
+        <aside id="sidebar-program" class="w-full lg:w-[340px] lg:min-w-[340px] bg-white dark:bg-zinc-900 lg:border-l border-slate-200/80 dark:border-zinc-800/80 hidden lg:flex flex-col flex-1 lg:flex-initial transition-colors duration-300 order-4 lg:order-3">
+            <div class="p-5 border-b border-slate-200/80 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-[10px] font-bold tracking-widest text-slate-400 dark:text-zinc-500 uppercase">Телевизионна програма</h4>
+                    <span id="todayDateBadge" class="text-[11px] font-extrabold px-2.5 py-0.5 bg-red-500/10 text-red-500 dark:bg-red-500/20 dark:text-red-400 rounded-md tracking-wider">--.--</span>
+                </div>
+                <h3 id="currentChannelName" class="text-base font-black text-slate-950 dark:text-white tracking-tight">Зареждане...</h3>
+            </div>
+            
+            <div id="programContainer" class="flex-1 p-5 space-y-3.5"></div>
+        </aside>
+    </div>
+
+    <script>
+    const API_BASE = 'https://tv-app-ios.onrender.com';
+    let currentHls = null;
+    let selectedChannel = null;
+
+    const channelMeta = {
+        diema1: { name: 'Diema Sport', badge: 'DS1', category: 'Спортни Канали', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Diema_Sport_HD_logo.png/960px-Diema_Sport_HD_logo.png' },
+        diema2: { name: 'Diema Sport 2', badge: 'DS2', category: 'Спортни Канали', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/DiemaSport2-logo.svg/960px-DiemaSport2-logo.svg.png' },
+        diema3: { name: 'Diema Sport 3', badge: 'DS3', category: 'Спортни Канали', logo: 'https://www.vivacom.bg/upload/editor/Channels%20Logos/Diema%20Sport/diema-sport3.png' },
+        maxOne: { name: 'Max One', badge: 'MO', category: 'Спортни Канали', logo: 'https://www.predavatel.com/bg/tv/cable-sat_img/max-one.png' },
+        max1: { name: 'Max Sport 1', badge: 'MS1', category: 'Спортни Канали', logo: 'https://msatcable.com/wp-content/uploads/2023/05/max-sport-1-hd-371x230-new-logo.png' },
+        max2: { name: 'Max Sport 2', badge: 'MS2', category: 'Спортни Канали', logo: 'https://msatcable.com/wp-content/uploads/2023/05/max-sport-2-hd-371x230-new-logo.png' },
+        euro1: { name: 'Eurosport 1', badge: 'E1', category: 'Спортни Канали', logo: 'https://e7.pngegg.com/pngimages/350/883/png-clipart-eurosport-1-eurosport-2-television-channel-1-euro-television-blue-thumbnail.png' },
+        euro2: { name: 'Eurosport 2', badge: 'E2', category: 'Спортни Канали', logo: 'https://e7.pngegg.com/pngimages/327/493/png-clipart-eurosport-1-television-channel-logo-eurosport-2-others-miscellaneous-television-thumbnail.png' },
+        bnt1: { name: 'BNT 1', badge: 'BT1', category: 'Спортни Канали', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Logo_of_BNT_1_%282018-%29.svg/960px-Logo_of_BNT_1_%282018-%29.svg.png' },
+        bnt3: { name: 'BNT 3', badge: 'BT3', category: 'Спортни Канали', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3BsOl0fzhcZ-dS5fPjTbuqD1cSiAIXeb_Pg&s' },
+        btv_comedy: { name: 'bTV Comedy', badge: 'BC', category: 'Развлекателни & Филми', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/BTV_Comedy_Bulgaria_logo.svg/960px-BTV_Comedy_Bulgaria_logo.svg.png' },
+        star_channel: { name: 'Star Channel', badge: 'SC', category: 'Развлекателни & Филми', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Star_Channel_2023.svg/960px-Star_Channel_2023.svg.png' },
+        star_life: { name: 'Star Life', badge: 'SL', category: 'Развлекателни & Филми', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Star_Life_2023.svg/1920px-Star_Life_2023.svg.png' }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+        fetchAndRenderChannels();
+        updateThemeButtonText();
+        displayTodayDate();
+        initCustomPlayer();
+        initKeyboardShortcuts();
+
+        setInterval(() => {
+            if (selectedChannel) {
+                loadProgram(selectedChannel);
+            }
+        }, 5 * 60 * 1000);
+    });
+
+    function toggleTheme() {
+        if (document.documentElement.classList.contains('dark')) {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        } else {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        }
+        updateThemeButtonText();
+    }
+
+    function updateThemeButtonText() {
+        const isDark = document.documentElement.classList.contains('dark');
+        document.getElementById('theme-text').innerText = isDark ? 'Светъл режим' : 'Тъмен режим';
+    }
+
+    function displayTodayDate() {
+        const d = new Date();
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const badge = document.getElementById('todayDateBadge');
+        if (badge) badge.innerText = `${day}.${month}`;
+    }
+
+    function switchMobileTab(tab) {
+        const channelsBtn = document.getElementById('mobile-tab-channels');
+        const programBtn = document.getElementById('mobile-tab-program');
+        const channelsSec = document.getElementById('sidebar-channels');
+        const programSec = document.getElementById('sidebar-program');
+
+        if (tab === 'channels') {
+            channelsBtn.classList.add('border-red-500', 'text-red-500');
+            channelsBtn.classList.remove('border-transparent', 'text-slate-500', 'dark:text-zinc-400');
+            programBtn.classList.remove('border-red-500', 'text-red-500');
+            programBtn.classList.add('border-transparent', 'text-slate-500', 'dark:text-zinc-400');
+
+            channelsSec.classList.remove('hidden');
+            programSec.classList.add('hidden');
+            programSec.classList.remove('flex');
+        } else {
+            programBtn.classList.add('border-red-500', 'text-red-500');
+            programBtn.classList.remove('border-transparent', 'text-slate-500', 'dark:text-zinc-400');
+            channelsBtn.classList.remove('border-red-500', 'text-red-500');
+            channelsBtn.classList.add('border-transparent', 'text-slate-500', 'dark:text-zinc-400');
+
+            programSec.classList.remove('hidden');
+            programSec.classList.add('flex');
+            channelsSec.classList.add('hidden');
+        }
+    }
+
+    async function fetchAndRenderChannels() {
+        const container = document.getElementById('categoriesContainer');
+        container.innerHTML = `<div class="text-xs font-semibold text-slate-400 dark:text-zinc-500 p-2 animate-pulse">Зареждане на каналите...</div>`;
+        
+        try {
+            const res = await fetch(`${API_BASE}/api/streams`);
+            const streams = await res.json();
+            const activeKeys = Object.keys(streams).filter(key => key !== 'lastUpdated');
+
+            if (activeKeys.length === 0) {
+                container.innerHTML = `<div class="text-xs font-semibold text-red-500 p-2">Няма активни стриймове на сървъра.</div>`;
+                return;
+            }
+
+            const categories = {};
+            activeKeys.forEach(key => {
+                const meta = channelMeta[key] || { name: key.toUpperCase(), badge: 'TV', category: 'Други Канали', logo: '' };
+                if (!categories[meta.category]) {
+                    categories[meta.category] = [];
+                }
+                categories[meta.category].push({ id: key, ...meta });
+            });
+
+            let htmlOutput = '';
+            for (const [catName, items] of Object.entries(categories)) {
+                htmlOutput += `
+                    <div class="space-y-2.5">
+                        <h3 class="text-[11px] font-bold tracking-widest text-slate-400 dark:text-zinc-500 uppercase px-1">
+                            ${catName}
+                        </h3>
+                        <div class="space-y-1.5">
+                            ${items.map(ch => `
+                                <button id="ch-${ch.id}" onclick="switchChannel('${ch.id}', '${ch.name}')" 
+                                    class="w-full flex items-center gap-3 p-3 rounded-xl border border-slate-100 dark:border-zinc-800/40 text-left transition duration-200 group bg-slate-50/50 dark:bg-zinc-900/30">
+                                    <div class="h-9 w-9 bg-white dark:bg-zinc-850 p-1.5 rounded-lg flex items-center justify-center border border-slate-200/60 dark:border-zinc-700/40 group-hover:border-red-500 transition duration-200 overflow-hidden">
+                                        ${ch.logo ? `
+                                            <img src="${ch.logo}" 
+                                                 alt="${ch.badge}" 
+                                                 class="max-w-full max-h-full object-contain filter dark:brightness-110" 
+                                                 onerror="this.onerror=null; this.parentNode.innerHTML='<span class=\'font-extrabold text-[10px] text-slate-700 dark:text-zinc-300\'>${ch.badge}</span>';" />
+                                        ` : `<span class="font-extrabold text-xs text-slate-700 dark:text-zinc-300">${ch.badge}</span>`}
+                                    </div>
+                                    <span class="text-sm font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-red-500 transition duration-150">
+                                        ${ch.name}
+                                    </span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = htmlOutput;
+
+            const lastSavedChannel = localStorage.getItem('lastChannel');
+            const targetChannelId = (lastSavedChannel && activeKeys.includes(lastSavedChannel)) ? lastSavedChannel : activeKeys[0];
+            const targetChannelName = channelMeta[targetChannelId]?.name || targetChannelId.toUpperCase();
+            
+            switchChannel(targetChannelId, targetChannelName);
+
+        } catch (err) {
+            console.error("Грешка при комуникация със сървъра:", err);
+            container.innerHTML = `<div class="text-xs font-semibold text-red-500 p-2">Сървърът е офлайн (${API_BASE})</div>`;
+        }
+    }
+
+    function switchChannel(id, channelName) {
+        selectedChannel = id;
+        localStorage.setItem('lastChannel', id);
+        document.getElementById('currentChannelName').innerText = channelName;
+
+        document.querySelectorAll('[id^="ch-"]').forEach(el => {
+            el.classList.remove('border-red-500', 'bg-red-50/30', 'dark:bg-red-500/5', 'dark:border-red-500/30');
+        });
+        const activeBtn = document.getElementById(`ch-${id}`);
+        if (activeBtn) {
+            activeBtn.classList.add('border-red-500', 'bg-red-50/30', 'dark:bg-red-500/5', 'dark:border-red-500/30');
+        }
+
+        loadStream(id);
+        loadProgram(id);
+    }
+
+    async function loadStream(id) {
+        const video = document.getElementById('video');
+
+        try {
+            const res = await fetch(`${API_BASE}/api/streams`);
+            const links = await res.json();
+            const m3u8Url = links[id];
+
+            if (!m3u8Url) {
+                console.warn(`Няма намерен активен линк за канал: ${id}`);
+                return;
+            }
+
+            const playVideo = () => {
+                video.muted = false;
+                video.volume = 1;
+
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Autoplay бе блокиран от браузъра. Опит без звук...");
+                        video.muted = true;
+                        video.play();
+                    });
+                }
+            };
+
+            if (Hls.isSupported()) {
+                if (currentHls) currentHls.destroy();
+                currentHls = new Hls();
+                currentHls.loadSource(m3u8Url);
+                currentHls.attachMedia(video);
+
+                currentHls.on(Hls.Events.MANIFEST_PARSED, function () {
+                    playVideo();
+                });
+
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = m3u8Url;
+                video.addEventListener('loadedmetadata', () => {
+                    playVideo();
+                }, { once: true });
+            }
+        } catch (err) {
+            console.error("Грешка при зареждане на видео поток:", err);
+        }
+    }
+
+    async function loadProgram(channelId) {
+        const container = document.getElementById('programContainer');
+        if (!container) return;
+        
+        try {
+            const res = await fetch(`${API_BASE}/api/program?channel=${channelId}`);
+            if (!res.ok) throw new Error();
+            
+            let channelEvents = await res.json();
+
+            if (!channelEvents || channelEvents.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center pt-8 text-center px-4">
+                        <p class="text-xs font-semibold text-slate-400 dark:text-zinc-500">Няма намерена програма.</p>
+                    </div>`;
+                return;
+            }
+
+            const now = new Date();
+            const currentMinutesNow = now.getHours() * 60 + now.getMinutes();
+
+            channelEvents = channelEvents.map(event => {
+                const timeStr = event.time.replace('.', ':');
+                const [hours, minutes] = timeStr.split(':').map(Number);
+                return {
+                    ...event,
+                    timeFormatted: timeStr,
+                    timeInMinutes: hours * 60 + minutes
+                };
+            });
+
+            channelEvents.sort((a, b) => a.timeInMinutes - b.timeInMinutes);
+
+            let currentLiveIndex = -1;
+            for (let i = 0; i < channelEvents.length; i++) {
+                if (channelEvents[i].timeInMinutes <= currentMinutesNow) {
+                    currentLiveIndex = i;
+                }
+            }
+
+            let filteredEvents = [];
+            if (currentLiveIndex !== -1) {
+                filteredEvents = channelEvents.slice(currentLiveIndex);
+            } else {
+                filteredEvents = channelEvents;
+            }
+
+            if (filteredEvents.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center pt-8 text-center px-4">
+                        <p class="text-xs font-semibold text-slate-400 dark:text-zinc-500">Програмата за днес приключи.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filteredEvents.map((event, index) => {
+                const isLive = (index === 0 && event.timeInMinutes <= currentMinutesNow);
+
+                let liveProgressPercent = 0;
+                if (isLive) {
+                    const nextEvent = filteredEvents[1];
+                    const startMin = event.timeInMinutes;
+                    const endMin = nextEvent ? nextEvent.timeInMinutes : startMin + 60;
+                    const totalDuration = endMin - startMin;
+                    const elapsed = currentMinutesNow - startMin;
+                    liveProgressPercent = Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100);
+                }
+
+                if (isLive) {
+                    return `
+                        <div class="p-4 bg-red-50/40 dark:bg-red-950/10 rounded-xl border border-red-500/40 dark:border-red-500/30 shadow-xs relative overflow-hidden transition-all duration-300">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <div class="text-xs font-black text-red-500 dark:text-red-400 tracking-wider flex items-center gap-1.5">
+                                    <span class="h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
+                                    ${event.timeFormatted}
+                                </div>
+                                <span class="text-[9px] font-extrabold bg-red-500 text-white px-2 py-0.5 rounded-md uppercase tracking-wider animate-pulse">НА ЖИВО</span>
+                            </div>
+                            <h5 class="text-xs font-bold text-slate-950 dark:text-white leading-snug mb-2">${event.title}</h5>
+                            
+                            <div class="w-full bg-slate-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-red-500 h-full transition-all duration-500" style="width: ${liveProgressPercent.toFixed(1)}%"></div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="p-3.5 bg-slate-50/60 dark:bg-zinc-900/40 rounded-xl border border-slate-200/50 dark:border-zinc-800/60 shadow-2xs hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200">
+                            <div class="text-xs font-bold text-slate-400 dark:text-zinc-500 mb-1 tracking-wider">${event.timeFormatted}</div>
+                            <h5 class="text-xs font-semibold text-slate-700 dark:text-zinc-300 leading-snug">${event.title}</h5>
+                        </div>
+                    `;
+                }
+            }).join('');
+
+        } catch (err) {
+            console.error("Грешка при визуализиране на програмата:", err);
+            container.innerHTML = `<div class="text-xs font-semibold text-red-500 p-2">Грешка при връзката с програмния сървър.</div>`;
+        }
+    }
+
+    function initCustomPlayer() {
+        const video = document.getElementById('video');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+        const durationDisplay = document.getElementById('durationDisplay');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const progressBarContainer = document.getElementById('progressBarContainer');
+        const wrapper = document.getElementById('player-wrapper');
+
+        let idleTimer = null;
+
+        function showControlsTemporarily() {
+            wrapper.classList.remove('player-idle');
+            clearTimeout(idleTimer);
+
+            idleTimer = setTimeout(() => {
+                wrapper.classList.add('player-idle');
+            }, 3500);
+        }
+
+        video.addEventListener('click', (e) => {
+            if (wrapper.classList.contains('player-idle')) {
+                showControlsTemporarily();
+            } else {
+                togglePlayPause();
+                showControlsTemporarily();
+            }
+        });
+
+        video.addEventListener('play', () => {
+            playIcon.classList.add('hidden');
+            pauseIcon.classList.remove('hidden');
+        });
+
+        video.addEventListener('pause', () => {
+            playIcon.classList.remove('hidden');
+            pauseIcon.classList.add('hidden');
+        });
+
+        video.addEventListener('timeupdate', () => {
+            if (video.duration) {
+                const pct = (video.currentTime / video.duration) * 100;
+                progressBarFill.style.width = `${pct}%`;
+                currentTimeDisplay.innerText = formatTime(video.currentTime);
+                durationDisplay.innerText = formatTime(video.duration);
+            } else {
+                currentTimeDisplay.innerText = formatTime(video.currentTime);
+            }
+        });
+
+        volumeSlider.addEventListener('input', (e) => {
+            video.volume = e.target.value;
+            video.muted = (e.target.value == 0);
+        });
+
+        progressBarContainer.addEventListener('click', (e) => {
+            const rect = progressBarContainer.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            if (video.duration) {
+                video.currentTime = pos * video.duration;
+            }
+        });
+
+        wrapper.addEventListener('mousemove', showControlsTemporarily);
+        wrapper.addEventListener('touchstart', showControlsTemporarily, { passive: true });
+
+        // Запазваме непрекъснатостта при излизане/влизане във Fullscreen
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            const isFS = document.fullscreenElement || document.webkitFullscreenElement;
+            if (isFS) {
+                showControlsTemporarily();
+            } else {
+                clearTimeout(idleTimer);
+                wrapper.classList.remove('player-idle');
+                
+                // Гарантираме, че видеото продължава да върви плавно
+                if (video.paused && video.readyState >= 2) {
+                    video.play().catch(() => {});
+                }
+            }
+        }
+    }
+
+    function initKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+
+            const video = document.getElementById('video');
+            const volumeSlider = document.getElementById('volumeSlider');
+
+            switch (e.key.toLowerCase()) {
+                case ' ':
+                case 'k':
+                    e.preventDefault();
+                    togglePlayPause();
+                    break;
+                case 'f':
+                    e.preventDefault();
+                    toggleFullscreen();
+                    break;
+                case 'm':
+                    e.preventDefault();
+                    toggleMute();
+                    break;
+                case 'arrowleft':
+                    e.preventDefault();
+                    seekRelative(-10);
+                    break;
+                case 'arrowright':
+                    e.preventDefault();
+                    seekRelative(10);
+                    break;
+                case 'arrowup':
+                    e.preventDefault();
+                    video.volume = Math.min(1, video.volume + 0.1);
+                    volumeSlider.value = video.volume;
+                    video.muted = false;
+                    break;
+                case 'arrowdown':
+                    e.preventDefault();
+                    video.volume = Math.max(0, video.volume - 0.1);
+                    volumeSlider.value = video.volume;
+                    break;
+            }
+        });
+    }
+
+    function togglePlayPause() {
+        const video = document.getElementById('video');
+        if (video.paused) {
+            video.play();
+        } else {
+            video.pause();
+        }
+    }
+
+    function seekRelative(seconds) {
+        const video = document.getElementById('video');
+        video.currentTime += seconds;
+    }
+
+    function toggleMute() {
+        const video = document.getElementById('video');
+        const volumeSlider = document.getElementById('volumeSlider');
+        video.muted = !video.muted;
+        volumeSlider.value = video.muted ? 0 : video.volume;
+    }
+
+    function toggleFullscreen() {
+        const wrapper = document.getElementById('player-wrapper');
+        const video = document.getElementById('video');
+
+        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+
+        if (!isFullscreen) {
+            if (wrapper.requestFullscreen) {
+                wrapper.requestFullscreen();
+            } else if (wrapper.webkitRequestFullscreen) {
+                wrapper.webkitRequestFullscreen();
+            } else if (video.webkitEnterFullscreen) {
+                video.webkitEnterFullscreen();
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+        }
+    }
+
+    function togglePiP() {
+        const video = document.getElementById('video');
+        if (document.pictureInPictureElement) {
+            document.exitPictureInPicture();
+        } else if (document.pictureInPictureEnabled) {
+            video.requestPictureInPicture();
+        }
+    }
+
+    function formatTime(seconds) {
+        if (isNaN(seconds)) return "00:00:00";
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+
+        const formattedHrs = String(hrs).padStart(2, '0');
+        const formattedMins = String(mins).padStart(2, '0');
+        const formattedSecs = String(secs).padStart(2, '0');
+
+        return `${formattedHrs}:${formattedMins}:${formattedSecs}`;
+    }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StreamingFeeds | Premium TV Hub</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.2); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(239, 68, 68, 0.5); }
+
+        .player-container {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .progress-bar-bg {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .progress-bar-fill {
+            background: #ffffff;
+        }
+
+        /* Автоматично укриване на контролите при бездействие */
+        .player-controls-layer {
+            transition: opacity 0.3s ease;
+        }
+        .player-idle .player-controls-layer {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        .player-idle {
+            cursor: none !important;
+        }
+    </style>
+    
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-[#f8fafc] text-slate-900 dark:bg-[#09090b] dark:text-zinc-100 min-h-screen antialiased flex flex-col transition-colors duration-300 overflow-x-hidden">
+
+   <header class="h-[70px] min-h-[70px] bg-white dark:bg-zinc-900 border-b border-slate-200/80 dark:border-zinc-800/80 shadow-xs px-4 md:px-6 flex items-center justify-between z-50 transition-colors duration-300">
+        <div class="flex items-center gap-3 md:gap-6">
+            <div class="flex items-center gap-2 md:gap-3 select-none">
+                <div class="h-3 w-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.7)]"></div>
+                <span class="text-base md:text-xl font-extrabold tracking-tight bg-gradient-to-r from-slate-950 to-slate-700 dark:from-white dark:to-zinc-400 bg-clip-text text-transparent">
+                    StreamingFeeds
+                </span>
+            </div>
+
+            <div class="h-6 w-[1px] bg-slate-200 dark:bg-zinc-800 hidden sm:block"></div>
+
+            <a href="https://valentinpenchev.github.io/Motorsports-Dashboard/" target="_blank" rel="noopener noreferrer" 
+               class="hidden sm:flex items-center gap-2.5 group transition-all duration-200 hover:opacity-90 active:scale-98">
+                <div class="h-3.5 w-3.5 bg-[#a62b2b] dark:bg-[#b83232] rounded-full animate-pulse shadow-[0_0_12px_rgba(184,50,50,0.6)] transition-transform group-hover:scale-110"></div>
+                <div class="text-xl tracking-tight select-none">
+                    <span class="font-black text-slate-950 dark:text-white uppercase transition-colors group-hover:text-red-500 dark:group-hover:text-red-400">RACE</span><span class="font-normal text-slate-400 dark:text-zinc-500">feeds</span>
+                </div>
+            </a>
+
+            <div class="h-6 w-[1px] bg-slate-200 dark:bg-zinc-800 hidden sm:block"></div>
+
+            <a href="https://www.glebul.com/" target="_blank" rel="noopener noreferrer"
+               class="hidden sm:flex items-center gap-2.5 group transition-all duration-200 hover:opacity-90 active:scale-98">
+                <div class="h-3.5 w-3.5 bg-indigo-600 dark:bg-indigo-500 rounded-full animate-pulse shadow-[0_0_12px_rgba(79,70,229,0.6)] transition-transform group-hover:scale-110"></div>
+                <div class="text-xl tracking-tight select-none">
+                    <span class="font-black text-slate-950 dark:text-white uppercase transition-colors group-hover:text-indigo-500 dark:group-hover:text-indigo-400">REC</span><span class="font-normal text-slate-400 dark:text-zinc-500">feeds</span>
+                </div>
+            </a>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="toggleTheme()" class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 text-xs font-bold px-3 md:px-4 py-2.5 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-xs transition duration-200 active:scale-95">
+                <svg id="theme-sun" class="w-4 h-4 text-amber-500 hidden dark:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.22" x2="5.64" y2="17.76"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <svg id="theme-moon" class="w-4 h-4 text-indigo-600 block dark:hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <span id="theme-text" class="tracking-wide uppercase text-slate-700 dark:text-zinc-300 hidden sm:inline">Светъл режим</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-col lg:flex-row flex-1 w-full items-start">
+        
+        <main class="app-main-layout order-1 lg:order-2 w-full lg:flex-1 bg-[#f8fafc] dark:bg-[#09090b] p-2 sm:p-4 lg:p-6 flex flex-col justify-start items-center transition-colors duration-300">
+            <div class="player-card-wrapper w-full max-w-[1200px] bg-black p-0 rounded-2xl border border-slate-200/70 dark:border-zinc-800/80 shadow-2xl transition-colors duration-300 overflow-hidden">
+                
+                <div id="player-wrapper" class="player-container aspect-video w-full max-h-[calc(100vh-120px)] bg-black relative group select-none overflow-hidden player-idle flex items-center justify-center">
                     
                     <video id="video" class="w-full h-full object-contain cursor-pointer" autoplay playsinline></video>
 
