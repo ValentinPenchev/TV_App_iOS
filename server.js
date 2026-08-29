@@ -19,7 +19,7 @@ app.use(cors());
 // КЕШ ЗА СТРИЙМОВЕТЕ
 let streamCache = {
     diema1: '', diema2: '', diema3: '', maxOne: '',
-    max1: '', max2: '', euro1: '', euro2: '',
+    max1: '', max2: '', max3: '', euro1: '', euro2: '',
     bnt1: '', bnt3: '', btv_comedy: '', star_channel: '', star_life: '', lastUpdated: null
 };
 
@@ -36,6 +36,7 @@ const channelsConfig = [
     { id: 'maxOne', name: 'Max One', pageUrl: 'https://www.seirsanduk.online/?player=12&id=hd-max-one-hd&pass=' },
     { id: 'max1', name: 'Max Sport 1', pageUrl: 'https://www.seirsanduk.online/?player=12&id=hd-max-sport-1-hd&pass=' },
     { id: 'max2', name: 'Max Sport 2', pageUrl: 'https://www.seirsanduk.online/?player=12&id=hd-max-sport-2-hd&pass=' },
+    { id: 'max3', name: 'Max Sport 3', pageUrl: 'https://www.seirsanduk.online/hd-max-sport-3-hd-online' },
     { id: 'euro1', name: 'Eurosport 1', pageUrl: 'https://www.seirsanduk.online/?id=hd-eurosport-1-hd&pass=&hash=' },
     { id: 'euro2', name: 'Eurosport 2', pageUrl: 'https://www.seirsanduk.online/?id=hd-eurosport-2-hd&pass=&hash=' },
     { id: 'bnt1', name: 'BNT 1', pageUrl: 'https://www.seirsanduk.online/?player=12&id=hd-bnt-1-hd&pass=' },
@@ -222,6 +223,7 @@ const channelUrlMap = {
     maxOne: 'https://www.xn----8sbafg9clhjcp.bg/tv/max-one/',
     max1: 'https://tv-programa.bg/max-sport-1',
     max2: 'https://tv-programa.bg/max-sport-2',
+    max3: 'https://tv-programa.bg/max-sport-3',
     euro1: 'https://tv-programa.bg/eurosport-1',
     euro2: 'https://tv-programa.bg/eurosport-2',
     bnt1: 'https://tv-programa.bg/bnt-1',
