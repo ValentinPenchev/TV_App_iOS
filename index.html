@@ -88,15 +88,15 @@
         </div>
     </header>
 
-    <!-- Главен контейнер с пренаредба чрез order -->
     <div class="flex flex-col lg:flex-row flex-1 w-full items-start">
         
-        <!-- Плейър: Най-горе при мобилни устройства (order-1), в средата при десктоп (lg:order-2) -->
+        <!-- Плейър: Най-горе при мобилни (order-1) -->
         <main class="app-main-layout order-1 lg:order-2 w-full lg:flex-1 bg-[#f8fafc] dark:bg-[#09090b] p-2 sm:p-4 lg:p-6 flex flex-col justify-start items-center transition-colors duration-300">
             <div class="player-card-wrapper w-full max-w-[1200px] bg-black p-0 rounded-2xl border border-slate-200/70 dark:border-zinc-800/80 shadow-2xl transition-colors duration-300 overflow-hidden">
                 
                 <div id="player-wrapper" class="player-container aspect-video w-full max-h-[calc(100vh-120px)] bg-black relative group select-none overflow-hidden player-idle flex items-center justify-center">
-                    <video id="video" class="w-full h-full object-contain cursor-pointer" autoplay playsinline></video>
+                    <!-- Добавени атрибути за поддръжка на PiP в iOS Safari -->
+                    <video id="video" class="w-full h-full object-contain cursor-pointer" autoplay playsinline allowsInlineMediaPlayback pip="true"></video>
 
                     <div class="player-controls-layer pointer-events-auto">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none"></div>
@@ -138,7 +138,8 @@
                                 </div>
 
                                 <div class="flex items-center gap-2 sm:gap-3.5">
-                                    <button onclick="togglePiP()" class="text-white/80 hover:text-white p-1 transition" title="Picture in Picture">
+                                    <!-- Бутон Картина в картината (PiP) -->
+                                    <button id="pipBtn" onclick="togglePiP()" class="text-white/80 hover:text-white p-1 transition active:scale-95" title="Картина в картината">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"></rect><rect x="11" y="9" width="7" height="5" rx="1"></rect></svg>
                                     </button>
 
@@ -154,7 +155,7 @@
             </div>
         </main>
 
-        <!-- Мобилни табове: След плейъра при мобилни (order-2) -->
+        <!-- Мобилни табове (order-2) -->
         <div class="mobile-tabs-nav flex lg:hidden order-2 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 w-full sticky top-0 z-40">
             <button id="mobile-tab-channels" onclick="switchMobileTab('channels')" class="flex-1 py-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 border-red-500 text-red-500">
                 Канали
@@ -164,12 +165,12 @@
             </button>
         </div>
 
-        <!-- Лява странична лента: Канали (order-3 за мобилни, lg:order-1 за десктоп) -->
+        <!-- Лява лента: Канали -->
         <aside id="sidebar-channels" class="order-3 lg:order-1 w-full lg:w-[300px] lg:min-w-[300px] bg-white dark:bg-zinc-900 lg:border-r border-slate-200/80 dark:border-zinc-800/80 flex flex-col p-5 transition-colors duration-300">
             <div id="categoriesContainer" class="space-y-6"></div>
         </aside>
 
-        <!-- Дясна странична лента: Програма (order-4 за мобилни, lg:order-3 за десктоп) -->
+        <!-- Дясна лента: Програма -->
         <aside id="sidebar-program" class="order-4 lg:order-3 w-full lg:w-[340px] lg:min-w-[340px] bg-white dark:bg-zinc-900 lg:border-l border-slate-200/80 dark:border-zinc-800/80 hidden lg:flex flex-col transition-colors duration-300">
             <div class="p-5 border-b border-slate-200/80 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 space-y-1.5">
                 <div class="flex items-center justify-between">
@@ -690,12 +691,31 @@
         }
     }
 
-    function togglePiP() {
+    // Универсална реализация на Picture-in-Picture (PiP) за настолни компютри и мобилни устройства (iOS/Android)
+    async function togglePiP() {
         const video = document.getElementById('video');
-        if (document.pictureInPictureElement) {
-            document.exitPictureInPicture();
-        } else if (document.pictureInPictureEnabled) {
-            video.requestPictureInPicture();
+        if (!video) return;
+
+        try {
+            // Стандартно Web API за PiP (Chrome, Edge, Firefox, Android)
+            if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+            } else if (document.pictureInPictureEnabled) {
+                await video.requestPictureInPicture();
+            } 
+            // Специфично Safari/iOS API
+            else if (video.webkitSupportsPresentationMode && typeof video.webkitSetPresentationMode === 'function') {
+                if (video.webkitPresentationMode === 'picture-in-picture') {
+                    video.webkitSetPresentationMode('inline');
+                } else {
+                    video.webkitSetPresentationMode('picture-in-picture');
+                }
+            } 
+            else {
+                alert('Картина в картината (PiP) не се поддържа от този браузър или устройство.');
+            }
+        } catch (err) {
+            console.error("Грешка при превключване на PiP режим:", err);
         }
     }
 
