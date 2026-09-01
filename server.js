@@ -212,8 +212,74 @@ scrapeTokens();
 /**
  * API ЕНДПОИНТИ ЗА ФРОНТЕНДА
  */
-app.get('/api/streams', (req, res) => { 
-    res.json(streamCache); 
+app.get('/api/streams', (req, res) => {
+    res.json(streamCache);
+});
+
+/**
+ * PROXY ЗА ВИДЕО СТРИЙМОВЕТЕ
+ * Браузърът на клиента не удря директно CDN-а на изходния сайт (различен IP и Referer
+ * от този, с който Puppeteer е получил линка) — сървърът дърпа плейлиста/сегментите
+ * вместо него и препраща съдържанието, като пренаписва вложените адреси да минават пак оттук.
+ */
+const STREAM_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+function getRefererForChannel(id) {
+    const channel = channelsConfig.find(c => c.id === id);
+    if (!channel) return 'https://www.seirsanduk.online/';
+    try {
+        return `${new URL(channel.pageUrl).origin}/`;
+    } catch {
+        return 'https://www.seirsanduk.online/';
+    }
+}
+
+async function proxyStream(targetUrl, referer, res) {
+    try {
+        const response = await axios.get(targetUrl, {
+            headers: { 'User-Agent': STREAM_USER_AGENT, 'Referer': referer },
+            responseType: 'arraybuffer',
+            timeout: 15000
+        });
+
+        const contentType = response.headers['content-type'] || '';
+        const isManifest = targetUrl.includes('.m3u8') || contentType.includes('mpegurl');
+
+        if (isManifest) {
+            const baseUrl = targetUrl.substring(0, targetUrl.lastIndexOf('/') + 1);
+            const text = Buffer.from(response.data).toString('utf-8');
+            const rewritten = text.split('\n').map(line => {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#')) return line;
+                const absoluteUrl = /^https?:\/\//i.test(trimmed) ? trimmed : baseUrl + trimmed;
+                return `/api/proxy?url=${encodeURIComponent(absoluteUrl)}&ref=${encodeURIComponent(referer)}`;
+            }).join('\n');
+
+            res.set('Content-Type', 'application/vnd.apple.mpegurl');
+            return res.send(rewritten);
+        }
+
+        res.set('Content-Type', contentType || 'video/mp2t');
+        res.send(Buffer.from(response.data));
+    } catch (err) {
+        console.error('   ❌ Грешка в proxy-то:', err.message);
+        res.status(502).send('Proxy error');
+    }
+}
+
+// Начален плейлист за избран канал (сървърът знае и линка, и правилния Referer)
+app.get('/api/proxy/:channelId', async (req, res) => {
+    const { channelId } = req.params;
+    const targetUrl = streamCache[channelId];
+    if (!targetUrl) return res.status(404).send('Няма активен стрийм за този канал');
+    await proxyStream(targetUrl, getRefererForChannel(channelId), res);
+});
+
+// Генеричен проход за вложени плейлисти и .ts сегменти (адресите вътре в плейлиста сочат тук)
+app.get('/api/proxy', async (req, res) => {
+    const { url, ref } = req.query;
+    if (!url) return res.status(400).send('Missing url param');
+    await proxyStream(url, ref || 'https://www.seirsanduk.online/', res);
 });
 
 const channelUrlMap = {

@@ -382,12 +382,13 @@
         try {
             const res = await fetch(`${API_BASE}/api/streams`);
             const links = await res.json();
-            const m3u8Url = links[id];
 
-            if (!m3u8Url) {
+            if (!links[id]) {
                 console.warn(`Няма намерен активен линк за канал: ${id}`);
                 return;
             }
+
+            const m3u8Url = `${API_BASE}/api/proxy/${id}`;
 
             const playVideo = () => {
                 video.muted = false;
